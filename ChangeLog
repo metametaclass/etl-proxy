@@ -1,0 +1,19 @@
+2012-09-05  Malyshev Artem  <proofit404@gmail.com>
+
+	* src/etl_proxy/graphs.clj: At that great point we begin use sets
+	instead of lists in graph representation. Many functions in the
+	create and read sections has been created. Function in the update
+	section has been refactored for correct node addition. If you will
+	try to add node which already exist in current graph of to add
+	arcs between nonexistent nodes, then resultant graph doesn't
+	change at all.
+
+2012-09-04  Malyshev Artem  <proofit404@gmail.com>
+
+	* src/etl_proxy/graphs.clj: Remove unnecessary functions for find
+	relation objects with body, use `node-by-id' instead. Add
+	`delete-sub-tree' function wich can work only with list of
+	roots. Add `delete-nodes-list' for package nodes processing.
+
+	* project.clj: Project initialization.
+

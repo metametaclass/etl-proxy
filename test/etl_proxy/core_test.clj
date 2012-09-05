@@ -1,0 +1,7 @@
+(ns etl-proxy.core-test
+  (:use clojure.test
+        etl-proxy.core))
+
+(deftest a-test
+  (testing "FIXME, I fail."
+    (is (= 0 1))))
