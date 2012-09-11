@@ -1,15 +1,29 @@
+2012-09-11  Malyshev Artem  <proofit404@gmail.com>
+
+	* src/etl_proxy/graph.clj: Rewrite update section for generic
+	`list-add-action' function.
+
+	* src/etl_proxy/json.clj: Simplify functions will work in
+	recursive manner. Attempt in the `grow-sub-tree' logic - it's
+	critical point in module.
+
+2012-09-07  Malyshev Artem  <proofit404@gmail.com>
+
+	* src/etl_proxy/json.clj: Create processing principle. Deploing
+	programm structure.
+
 2012-09-06  Malyshev Artem  <proofit404@gmail.com>
 
 	* src/etl_proxy/json.clj: New module for creating graph structure
 	from json message.
 
-	* src/etl_proxy/graphs.clj: I begin to use marginalia literate
+	* src/etl_proxy/graph.clj: I begin to use marginalia literate
 	programming system. All module structures was rewritten in
 	marginalia markup style.
 
 2012-09-05  Malyshev Artem  <proofit404@gmail.com>
 
-	* src/etl_proxy/graphs.clj: At that great point we begin use sets
+	* src/etl_proxy/graph.clj: At that great point we begin use sets
 	instead of lists in graph representation. Many functions in the
 	create and read sections has been created. Function in the update
 	section has been refactored for correct node addition. If you will
@@ -19,7 +33,7 @@
 
 2012-09-04  Malyshev Artem  <proofit404@gmail.com>
 
-	* src/etl_proxy/graphs.clj: Remove unnecessary functions for find
+	* src/etl_proxy/graph.clj: Remove unnecessary functions for find
 	relation objects with body, use `node-by-id' instead. Add
 	`delete-sub-tree' function wich can work only with list of
 	roots. Add `delete-nodes-list' for package nodes processing.

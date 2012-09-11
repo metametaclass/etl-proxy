@@ -1,7 +1,7 @@
 ;; Copyright (c) 2012  Malyshev Artem  {-proofit404@gmail.com-}
 
-(ns etl-proxy.graphs
-  "Graph processing module."
+(ns etl-proxy.graph
+  "# Graph processing module."
   (:use [clojure.set]))
 
 ;; The main aim of this module is definition of graph data structure and basic functions above
@@ -20,6 +20,7 @@
 (def empty-graph [#{} #{}])
 
 ;; ## CRUD.
+;; 
 ;; Design of this module suppose follow for the CRUD principle. Division module structure made with
 ;; correspond to "one volume equal one letter of CRUD word".
 
@@ -54,7 +55,10 @@
 (defn available-id
   "Return single id which isn't among to any node."
   [graph]
-  (inc (reduce max (ids graph))))
+  (inc
+   (reduce max
+           ;; Add null index to the id set if empty graph is occur.
+           (conj (ids graph) 0))))
 
 (defn graph-member?
   "If body belong to any node in the graph, then function return true."
@@ -121,13 +125,45 @@
     ;; Return graph as is.
     graph))
 
-(defn add-arcs-list
-  "Create new graph comprising all new arcs from list."
-  [arcs-list graph]
-  (if (empty? arcs-list)
-    graph
-    (recur (rest arcs-list)
-           (add-arc (first arcs-list) graph))))
+(defn add-parent
+  "Add given node as parent to id in graph. If node already exist, then simple add arc (bind nodes)."
+  [id-child body graph]
+  (let [new-graph (add-node body graph)]
+    (add-arc (vector (id-by-body body new-graph) id-child)
+             new-graph)))
+
+(defn add-child
+  "Add given node as child to id in graph. If node already exist, then simple add arc (bind nodes)."
+  [id-parent body graph]
+  (let [new-graph (add-node body graph)]
+    (add-arc (vector id-parent (id-by-body body new-graph))
+             new-graph)))
+
+;; ### Actions on list of items with graph.
+
+(defn list-add-action
+  "Create new graph comprising all new items from list processed by fun."
+  [fun]
+  (fn [item-list graph]
+    (if (empty? item-list)
+      graph
+      (recur (rest item-list)
+             (fun (first item-list) graph)))))
+
+(def add-nodes-list (list-add-action add-node))
+
+(def add-arcs-list (list-add-action add-arc))
+
+(defn add-child-list
+  "Create new graph in which all passed nodes will be childs of passed id."
+  [id-parent item-list graph]
+  (if (empty? item-list)
+      graph
+      (recur id-parent
+             (rest item-list)
+             (add-child id-parent
+                        (first item-list)
+                        graph))))
 
 ;; ## Destroy section.
 
@@ -161,7 +197,7 @@
 
 (defn tie-node
   "Delete node from graph, clear its arcs and create arcs between its parents and childs for saving
-object relations without intermediate object."
+  object relations without intermediate object."
   [id graph]
   ;; Create list of arcs as direct multiply parent with child.
   (let [restore-arcs (mapcat
@@ -177,7 +213,7 @@ object relations without intermediate object."
 
 (defn delete-sub-tree
   "Accept node id list every item in which point to the root of sub tree. Then delete all nodes and
-arcs belongs to those sub-tree."
+  arcs belongs to those sub-tree."
   [roots graph]
   (let [;; Store graph without nodes accepted with roots.
         current-level-map (delete-nodes-list roots graph)
