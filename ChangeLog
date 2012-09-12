@@ -1,3 +1,8 @@
+2012-09-12  Malyshev Artem  <proofit404@gmail.com>
+
+	* src/etl_proxy/graph.clj: Route operation section was added.
+	Clean up graph from self-loops and obvious arcs now possible.
+
 2012-09-11  Malyshev Artem  <proofit404@gmail.com>
 
 	* src/etl_proxy/graph.clj: Rewrite update section for generic

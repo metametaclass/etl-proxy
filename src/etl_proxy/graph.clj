@@ -15,6 +15,7 @@
 ;; - arc   := [id id]
 ;; - id - unique natural number which must be reevaluated in every graph transformation.
 ;; - body - arbitrary data type which can express necessary abstract data.
+;; - route := #{arc}
 ;;
 
 (def empty-graph [#{} #{}])
@@ -222,3 +223,73 @@
     (if (empty? lower-level-childs)
       current-level-map
       (recur lower-level-childs current-level-map))))
+
+(defn delete-self-loops
+  "Return clear graph without relations between objects with it self (self loops). For example for
+  object A remove A -> A relation."
+  [[nodes arcs]]
+  (vector nodes
+          (select (fn [[parent child]] (not= parent child))
+                  arcs)))
+
+;; ## Graph route analyze tools.
+;;
+;; TODO: write documentation for route block.
+
+(defn tie-route
+  "Return route without arcs which contain accepted id as child or as parent. This function restore
+  parent-child relations between remain objects without purged intermediate object. For example if
+  we have relation below A -> B -> C and we tie B object then A -> C relation will be added."
+  [id arcs]
+  (let [restore-arcs
+        (mapcat
+         (fn [child]
+           ;; Restore parent-child relation.
+           (map #(vector % child)
+                ;; Select all parents of tie id.
+                (map first (select (fn [[parent child]] (= child id)) arcs))))
+         ;; Select all childs of tie id.
+         (map second (select (fn [[parent child]] (= parent id)) arcs)))]
+    (difference
+     (union arcs restore-arcs)
+     ;; All arcs which contain id as parent or as child.
+     (select (fn [[parent child]] (or (= parent id) (= child id))) arcs))))
+
+(defn intermediate-id
+  "Return any intermediate id from route except beginning and end points."
+  [from to route]
+  (first
+   (select (fn [id]
+             (and (not= from id)
+                  (not= to id)))
+           (union (set (map first route))
+                  (set (map second route))))))
+
+(defn route?
+  "Return true if accepted arcs set is a route from A to B node."
+  [from to arcs]
+  (cond
+   (= arcs #{[from to]}) true
+   (= arcs #{}) false
+   :else (recur from
+                to
+                (tie-route (intermediate-id from to arcs) arcs))))
+
+(defn route-list
+  "Return list of all possible routes from parent to child in graph."
+  [from to graph]
+  (let [routes (list)]
+    ;; FIXME: I don't work yet.
+    ))
+
+(defn delete-obvious-arcs
+  "Return clear graph without obvious direct relations between objects. For example for node sequence
+  expressed through A -> B -> C and direct A -> C arcs last will deleted from graph."
+  [graph]
+  ((fn [[nodes arcs]]
+     (vector nodes
+             (select (fn [[parent child]]
+                       (= (list [parent child])
+                          (route-list parent child graph)))
+                     arcs)))
+   graph))

@@ -5,14 +5,14 @@
   (:use [etl-proxy.graph]
         [cheshire.core]))
 
-;; This module was written for possibility of creation graph strucutre from json markup language
+;; This module was written for possibility of creation graph structure from json markup language
 ;; document. Internal mechanics of service require to represent any data structure as graph in set
 ;; terms. External communication has provided by JSON markup language and we need to transform it into
 ;; graph.
 ;;
 ;; With `cheshire` library clojure can represent json format as map composed of strings, vectors and
 ;; other maps. Because maps keys used as structure representation facility we can just to use values
-;; in it. All dependencies in graph represented with arcs set and keys safity doesn't necessary.
+;; in it. All dependencies in graph represented with arcs set and keys safety doesn't necessary.
 ;;
 ;; Any node in graph can contain in its body terminal or non-terminal part of json document
 ;; structure. If node is non-terminal, then it mast be simplified.
@@ -50,7 +50,7 @@
   [body]
   ;; At this point we can accept only map because vectors
   ;; process element by element and doesn't return after
-  ;; call this fucntion.
+  ;; call this function.
   (if (simple-node? body)
     (list)
     (concat
@@ -64,11 +64,11 @@
 
 ;; ## JSON processing principle.
 ;;
-;; The simplest approach to recursive processing nested sequinces is create graph with one node
+;; The simplest approach to recursive processing nested sequences is create graph with one node
 ;; without any arcs in it. Then we need to simplify this node into one parent node and list of its
 ;; children nodes. Now we can create new graph without first node but with new nodes generated
 ;; above. Now we have graph contained same nodes and its arcs which demonstrates nodes parent-child
-;; relations. We reproduse our actions with current graph nodes until we have node set which we
+;; relations. We reproduce our actions with current graph nodes until we have node set which we
 ;; can't simplify anymore.
 ;;
 ;; If we will process node set of graph in manner of sequence, than we can supply for each node its
@@ -79,7 +79,7 @@
 ;; At this point we have problem we can't change body of any node without automatic changing its id.
 ;; This behaviour result in lost arcs relation validity. I solve this problem in simple manner.
 ;; Instead of changing body of existed node we will add its simplified version as child AND as
-;; parent to it, then add non simplified childs to simplified parent and finaly TIE non simplified
+;; parent to it, then add non simplified childs to simplified parent and finally TIE non simplified
 ;; node. Those action will result in automatic reevaluate arc indices in correct manner. When we tie
 ;; non-simplified node new arcs appear excepting new node, because new simplified node fit as self
 ;; parent and child to non-simplified. There is two kinds of parasite arcs. First is a parent-child
@@ -109,10 +109,12 @@
                                          graph))
         simple-id (id-by-body simple-body new-graph)]
     (if-not (simple-node? body)
-      (tie-node id ;; Old non-simplified node.
-                (add-child-list simple-id ;; New simplified node.
-                                (rest-of-node body) ;; Its non-simplified childs.
-                                new-graph))
+      (delete-obvious-arcs
+       (delete-self-loops
+        (tie-node id                                  ;; Old non-simplified node.
+                  (add-child-list simple-id           ;; New simplified node.
+                                  (rest-of-node body) ;; It's non-simplified childs.
+                                  new-graph))))
       graph)))
 
 (defn simplify-graph
