@@ -1,3 +1,8 @@
+2012-09-13  Malyshev Artem  <proofit404@gmail.com>
+
+	* src/etl_proxy/graph.clj: Rename node into vertex and arc into
+	edge.
+
 2012-09-12  Malyshev Artem  <proofit404@gmail.com>
 
 	* src/etl_proxy/graph.clj: Route operation section was added.
