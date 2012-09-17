@@ -113,7 +113,7 @@
       (delete-obvious-edges
        (delete-self-loops
         (tie-vertex id                                  ;; Old non-simplified vertex.
-                  (add-child-list simple-id           ;; New simplified vertex.
+                  (add-child-list simple-id             ;; New simplified vertex.
                                   (rest-of-vertex body) ;; It's non-simplified childs.
                                   new-graph))))
       graph)))

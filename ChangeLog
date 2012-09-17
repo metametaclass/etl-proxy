@@ -1,3 +1,14 @@
+2012-09-17  Malyshev Artem  <proofit404@gmail.com>
+
+	* src/etl_proxy/graph/route.clj: Deep first search of route in the
+	graph.
+
+	* src/etl_proxy/graph/crud.clj: Old implementation of crud circle
+	for graph.
+
+	* src/etl_proxy/graph.clj: This file now is a simple name space
+	conjunction.
+
 2012-09-13  Malyshev Artem  <proofit404@gmail.com>
 
 	* src/etl_proxy/graph.clj: Rename node into vertex and arc into
