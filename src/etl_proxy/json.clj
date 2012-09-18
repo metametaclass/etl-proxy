@@ -1,8 +1,9 @@
 ;; Copyright (c) 2012  Malyshev Artem  {-proofit404@gmail.com-}
 
 (ns etl-proxy.json
-  (:use [etl-proxy.graph]
-        [cheshire.core]))
+  (:use cheshire.core
+        etl-proxy.graph.crud
+        etl-proxy.graph.route))
 
 ;; ## Convert JSON markup language into graph data structure.
 ;;
@@ -128,7 +129,3 @@
   [json-map]
   (simplify-graph
    (add-vertex json-map empty-graph)))
-
-;; USEME:
-;; <pre><code>(parse-string (slurp "example.json") true)
-;; </code></pre>

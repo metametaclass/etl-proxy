@@ -1,8 +1,8 @@
 ;; Copyright (c) 2012  Malyshev Artem  {-proofit404@gmail.com-}
 
 (ns etl-proxy.graph.route
-  (:use [etl-proxy.graph.crud]
-        [clojure.set]))
+  (:use etl-proxy.graph.crud
+        clojure.set))
 
 ;; ## Graph route analyze tools.
 ;;
@@ -52,11 +52,12 @@
   [start end edges]
   (cond
    (= edges #{[start end]}) true
-   (or (= edges #{})
-       (count edges)) false
-   :else (recur start
-                end
-                (tie-route (intermediate-id start end edges) edges))))
+   (or
+    (= edges #{})
+    (= (count edges) 1)) false
+    :else (recur start
+                 end
+                 (tie-route (intermediate-id start end edges) edges))))
 
 ;; If we sure that given edge set is a route and we get it start vertex, then we can evaluate end
 ;; vertex in the route by tie child of start vertex until we got route consist from single edge.
@@ -78,26 +79,36 @@
 ;; in it, then we don't expand it any more. Evaluation of all simple routes list stops when we find
 ;; all routes to the end vertex and other final vertex doesn't has any childs which can bring us to
 ;; the end vertex.
+;;
+;; In two functions below we use `sub-routes' definition. It is a list of routes or rather parts of
+;; routes. In simple manner it is list of sets of edges (two element vector of graph ids). Expand
+;; route is action of adding one edge into each route in this list.
 
 (defn expand-route-tail
   "This function accept list of route and return lisp of route which was expanded from tail. If
   complete route from start to end vertex is present in the list, then it will be unchanged."
   [start end sub-routes graph]
-  (mapcat
-   (fn [route]
-     (let [parent (route-end start route)]
-       ;; This function create route list from list of new end vertices.
-       (map
-        (fn [child]
-          (conj route (vector parent child)))
-        ;; It's a list of edges spread from current end vertex to the new.
-        (relation-childs
-         parent
-         graph))))
-   ;; We don't process sub-routes which is route to end point already.
+  (concat
+   (mapcat
+    (fn [route]
+      (let [parent (route-end start route)]
+        ;; This function create route list from list of new end vertices.
+        (map
+         (fn [child]
+           (conj route (vector parent child)))
+         ;; It's a list of edges spread from current end vertex to the new.
+         (relation-childs
+          parent
+          graph))))
+    ;; We don't expand sub-routes which is route to end point already.
+    (filter
+     (fn [sub-route]
+       (not (route? start end sub-route)))
+     sub-routes))
+   ;; We add routes with final vertex to the processed list above.
    (filter
     (fn [sub-route]
-      (not (route? start end sub-route)))
+      (route? start end sub-route))
     sub-routes)))
 
 (defn expand-route-tail-rec
@@ -125,8 +136,11 @@
    (expand-route-tail-rec start
                           end
                           ;; Select list with first elements of future routes.
-                          (map (fn [item] (set (list item)))
-                               (select (fn [edge] (= (first edge) start)) (second graph)))
+                          (map (fn [item]
+                                 (set (list item)))
+                               (select (fn [edge]
+                                         (= (first edge) start))
+                                       (second graph)))
                           graph)))
 
 ;; Obvious edges is some kind of parasite edges which make our graph parent child relation
