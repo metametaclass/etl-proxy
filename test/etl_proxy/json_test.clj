@@ -5,5 +5,4 @@
 
 (deftest read-json-file
   (testing "Check correct reading json file into graph structure."
-    (is (= (parse-string (slurp "example.json") true)
-           ))))
+    (is (= (parse-string (slurp (str (. (java.io.File. ".") getCanonicalPath) "/test/etl_proxy/message_example.json")) true)))))

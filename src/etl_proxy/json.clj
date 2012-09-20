@@ -9,12 +9,13 @@
 ;;
 ;; This module was written for possibility of creation graph structure from json markup language
 ;; document. Internal mechanics of service require to represent any data structure as graph in set
-;; terms. External communication has provided by JSON markup language and we need to transform it into
-;; graph.
+;; terms. External communication provide any data in the JSON markup language and we need to
+;; transform it into graph.
 ;;
 ;; With `cheshire` library clojure can represent json format as map composed of strings, vectors and
-;; other maps. Because maps keys used as structure representation facility we can just to use values
-;; in it. All dependencies in graph represented with edges set and keys safety doesn't necessary.
+;; other maps. We can convert this map into graph in recursive manner. From this point all vertices
+;; can be divided into "simple" and "complex" by possibility of expression this vertex into graph
+;; sub-tree.
 ;;
 ;; Any vertex in graph can contain in its body terminal or non-terminal part of json document
 ;; structure. If vertex is non-terminal, then it mast be simplified.
@@ -23,46 +24,46 @@
 ;;
 ;; I chose next rules for simplify vertices in graph:
 ;;
-;; - non-sequences and lists will suppose as simplified vertices.
-;; - any map will suppose as single nested vertex and it will transform to single list without maps
-;;   keys (only values).
-;; - any vector will suppose as vector of nested vertices and its each element will process in distinct
-;;   single vertex manner.
+;; - non-sequence and list of non-sequence will suppose as simplified vertices.
+;; - any map will suppose as few nested vertex and it will transform into simple vertices as much as
+;;   many elements map contained.
+;; - any vector will suppose as vector of nested vertices and its each element will process as distinct
+;;   simple vertex. Each vector elements will added as child for its maps key vertex.
 ;;
 
 (defn simple-vertex?
-  "Return true if accepted vertex doesn't contain nested vertices. For simplification rules visit project
+  "Return true if accepted vertex can't be simplified. For simplification rules visit project
   documentation."
   [body]
   (not (or (vector? body)
            (map? body))))
 
 (defn simplify-vertex
-  "Return single simplified parent vertex. For simplification rules visit project documentation."
+  "Return list of simplified parent vertex fields. For simplification rules visit project
+  documentation."
   [body]
   (if (simple-vertex? body)
     body
     ;; Procession vector variant here is ignored because it will
     ;; solve in the rest of simplified vertex and doesn't occur here.
-    (filter simple-vertex?
-            (vals body))))
+    (map (fn [[key value]]
+           (list key value))
+         (filter (fn [[key value]]
+                   ;; Map function process hash-map as list of two-placed vectors.
+                   (simple-vertex? value))
+                 body))))
 
 (defn rest-of-vertex
   "Return list of non simplified child vertices. For simplification rules visit project documentation."
   [body]
-  ;; At this point we can accept only map because vectors
-  ;; process element by element and doesn't return after
-  ;; call this function.
   (if (simple-vertex? body)
     (list)
     (concat
      ;; All vector elements conjuction into single list. 
      (mapcat seq
-             (filter #(vector? %)
-                     (vals body)))
+             (filter #(vector? %) body))
      ;; Maps will be added as is.
-     (filter #(map? %)
-             (vals body)))))
+     (filter #(map? %) body))))
 
 ;; ## JSON processing principle.
 ;;
