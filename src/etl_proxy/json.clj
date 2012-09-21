@@ -20,69 +20,87 @@
 ;; Any vertex in graph can contain in its body terminal or non-terminal part of json document
 ;; structure. If vertex is non-terminal, then it mast be simplified.
 
+(defn simple-body?
+  "Return true if accepted vertex can't be simplified. For simplification rules visit project
+  documentation."
+  [body]
+  (not (or (list? body)
+           (vector? body)
+           (map? body))))
+
+(defn simplify-body
+  "Return list of simplified parent vertex fields. For simplification rules visit project
+  documentation."
+  [body]
+  (if (map? body)
+    ;; We return it as vector for observance vertex simplification principle.
+    (apply vector
+           (map (fn [[key value]]
+                  (list key value))
+                body))
+    body))
+
 ;; ## Vertex simplification principle.
 ;;
 ;; I chose next rules for simplify vertices in graph:
 ;;
-;; - non-sequence and list of non-sequence will suppose as simplified vertices.
-;; - any map will suppose as few nested vertex and it will transform into simple vertices as much as
-;;   many elements map contained.
-;; - any vector will suppose as vector of nested vertices and its each element will process as distinct
-;;   simple vertex. Each vector elements will added as child for its maps key vertex.
+;; - non-sequence will suppose as simplified vertices.
+;; - any map will suppose as few nested vertices and it will transform into sequences of lists for each
+;;   key-value tuple vertices the same level graph relations. For example graph like A -> {:b B :c
+;;   C :d D} -> E will result into A -> (:b B) -> E, A -> (:c C) -> E, A -> (:d D) -> E.
+;; - any vector will suppose as few nested vertices and it will transform into sequences of its
+;;   elements vertices the same level graph relations. For example if we have some graph like A ->
+;;   [B C D] -> E than we will have resulted graph as A -> B -> E, A -> C -> E, A -> D -> E.
+;; - list of non-sequences will suppose as parent-child relation series with "nearest element to
+;;   start is high-order parent for rest of list" rule. For example if we have some graph like A ->
+;;   (B C D) -> E then we will have resulted graph as A -> B -> C -> D -> E.
 ;;
+;; I strongly recommend don't try get body of simplified element directly from graph in functions
+;; below. It will be better to accept it as function parameter because with this approach becomes
+;; possibility of it intermediate simplification with foreign function application.
 
-(defn simple-vertex?
-  "Return true if accepted vertex can't be simplified. For simplification rules visit project
-  documentation."
-  [body]
-  (not (or (vector? body)
-           (map? body))))
+(defn vector-simplification
+  "This function simplify accepted id - body tuple in the vector manner."
+  [id body graph]
+  ;; At this function we must get vertex of vector type and add its elements as child for it.
+  ;; Then we get list of old childs and list of newly added vector elements and add edges which
+  ;; provide new element as new parents for all old child.
+  (let [;; New graph with added newly elements as childs.
+        new-graph (add-child-list id body graph)
+        ;; List of old childs of accepted vector.
+        restore-childs (relation-childs id graph)
+        ;; List of new parents from vector elements.
+        new-parents (map (fn [item] (id-by-body item new-graph)) body)
+        ;; List of edges providing new parent relations (direct product of two lists above).
+        new-relations (mapcat (fn [parent] (map (fn [child] (vector parent child)) restore-childs)) new-parents)]
+    (add-edges-list new-relations new-graph)))
 
-(defn simplify-vertex
-  "Return list of simplified parent vertex fields. For simplification rules visit project
-  documentation."
-  [body]
-  (if (simple-vertex? body)
-    body
-    ;; Procession vector variant here is ignored because it will
-    ;; solve in the rest of simplified vertex and doesn't occur here.
-    (map (fn [[key value]]
-           (list key value))
-         (filter (fn [[key value]]
-                   ;; Map function process hash-map as list of two-placed vectors.
-                   (simple-vertex? value))
-                 body))))
+(defn map-simplification
+  "This function simplify accepted id - body tuple in the hash-map manner."
+  [id body graph]
+  ;; Because hash-map can be adduced into vector by body simplifying function we just use its.
+  (vector-simplification id (simplify-body body) graph))
 
-(defn rest-of-vertex
-  "Return list of non simplified child vertices. For simplification rules visit project documentation."
-  [body]
-  (if (simple-vertex? body)
-    (list)
-    (concat
-     ;; All vector elements conjuction into single list. 
-     (mapcat seq
-             (filter #(vector? %) body))
-     ;; Maps will be added as is.
-     (filter #(map? %) body))))
+(defn list-simplification
+  "This function simplify accepted id - body tuple in the list manner."
+  [id body graph]
+  ;; At this function we must get vertex of list type and then process it in sequence manner. First
+  ;; element of list must be a direct child of accepted vertex. Last element of list must be a
+  ;; high-order parent to all childs of accepted vertex.
+  (let [;; New graph with added newly element as childs series for accepted body.
+        new-graph (add-child-series id body graph)
+        ;; List of old childs of accepted vector.
+        restore-childs (relation-childs id graph)
+        ;; Last element in the series.
+        new-parent (id-by-body (last body) new-graph)
+        ;; List of edges providing last series element as new parent.
+        new-relations (map (fn [child] (vector new-parent child)) restore-childs)]
+    (add-edges-list new-relations new-graph)))
 
-;; ## JSON processing principle.
-;;
-;; The simplest approach to recursive processing nested sequences is create graph with one vertex
-;; without any edges in it. Then we need to simplify this vertex into one parent vertex and list of its
-;; children vertices. Now we can create new graph without first vertex but with new vertices generated
-;; above. Now we have graph contained same vertices and its edges which demonstrates vertices parent-child
-;; relations. We reproduce our actions with current graph vertices until we have vertex set which we
-;; can't simplify anymore.
-;;
-;; If we will process vertex set of graph in manner of sequence, than we can supply for each vertex its
-;; simplified version and list of not simplified parts which was derived during simplification of
-;; parent vertex. And all what we need now is substitution simplified vertex into not simplified and
-;; then add not simplified childs to the new vertex.
-;;
 ;; At this point we have problem we can't change body of any vertex without automatic changing its id.
 ;; This behaviour result in lost edges relation validity. I solve this problem in simple manner.
-;; Instead of changing body of existed vertex we will add its simplified version as child AND as
-;; parent to it, then add non simplified childs to simplified parent and finally TIE non simplified
+;; Instead of changing body of existed vertex we will add its simplified version as child _AND_ as
+;; parent to it, then add non simplified childs to simplified parent and finally _TIE_ non simplified
 ;; vertex. Those action will result in automatic reevaluate edge indices in correct manner. When we tie
 ;; non-simplified vertex new edges appear excepting new vertex, because new simplified vertex fit as self
 ;; parent and child to non-simplified. There is two kinds of parasite edges. First is a parent-child
@@ -90,43 +108,68 @@
 ;; to a light form of graph. Second is a self-loop relation A -> A object. Graph must be cleaned
 ;; from this relation type.
 
+(defn simplify-vertex
+  "Add simplified vertex body into graph and tie non-simplified vertex."
+  [id graph]
+  (let [body (body-by-id id graph)]
+    (if (simple-body? body) 
+      ;; Non-sequence will pass as is.
+      graph
+      ;; Sequence will process according to vertex simplification rules.
+      (delete-obvious-edges
+        (tie-vertex
+         id ;; This is old non-simplified vertex id and it must be purged from graph.
+         (cond
+          ;; Any vector will "substitute" for sequence of its elements.
+          (vector? body) (vector-simplification id body graph)
+          ;; Any map will "substitute" for sequence of its simplified key-value tuple.
+          (map? body) (map-simplification id body graph)
+          ;; Any list will "substitute" for series of its elements.
+          (list? body) (list-simplification id body graph)))))))
+
+(def simplify-vertex-list (list-action-on-graph simplify-vertex))
+
+;; ## JSON processing principle.
+;;
+;; So here we come to the recursive processing of given nested markup expressions. Let talk about
+;; recursion above graph at all. We can apply any function to graph which will return new modified
+;; (more simplified in our situation). We can process any such functions above lists of parameters
+;; use each time new graph as parameter for procession next list element by current function. Main
+;; problem of such approach to parse nested expressions that we can't say that procession all non
+;; simplified list elements in current graph don't appear new non simplified vertices as resulted
+;; graph. So we need check function for this trouble kind.
+
 (defn simple-graph?
-  "Return true if there is no non-terminal vertices in the graph."
+  "Return true if graph contain only simple vertices."
   [graph]
   (= (list)
      ((fn [[vertices edges]]
         ;; Return list of non-terminal vertices from graph.
-        (filter #(not (simple-vertex? %)) vertices))
+        (filter #(not (simple-body? %)) vertices))
       graph)))
 
-(defn grow-sub-tree
-  "Add simplified vertex and rest of it into graph and tie non-simplified vertex."
-  [id graph]
-  (let [body (body-by-id id graph)
-        simple-body (simplify-vertex body)
-        ;; Add simplified vertex as parent and child to the non-simplified vertex.
-        new-graph (add-child id
-                             simple-body
-                             (add-parent id
-                                         simple-body
-                                         graph))
-        simple-id (id-by-body simple-body new-graph)]
-    (if-not (simple-vertex? body)
-      (delete-obvious-edges
-       (delete-self-loops
-        (tie-vertex id                                  ;; Old non-simplified vertex.
-                  (add-child-list simple-id             ;; New simplified vertex.
-                                  (rest-of-vertex body) ;; It's non-simplified childs.
-                                  new-graph))))
-      graph)))
+;; So now as we can determine that all vertices are simple or not we can simplify our graph
+;; recursively until all nested expressions will deduced into their terminal state. To solve this we
+;; will work with vertex set as with sequence of expressions.
 
 (defn simplify-graph
   "Accept graph data structure and simplify it recursively until graph become a simple variant of
   graph."
-  [graph])
+  [graph]
+  (if (simple-graph? graph)
+    graph
+    (recur
+     (simplify-vertex-list
+      ;; List of all non simplified vertices in the current graph.
+      (map #(id-by-body % graph)
+           (filter #(not (simple-body? %))
+                   (bodies graph)))
+      graph))))
 
-(defn graph-from-json
-  "Accept json hash map and recursively convert it into graph."
-  [json-map]
+(defn json2graph
+  "Accept json string and recursively convert it into simple graph."
+  [json]
   (simplify-graph
-   (add-vertex json-map empty-graph)))
+   (add-vertex
+    (parse-string json)
+    empty-graph)))

@@ -87,7 +87,7 @@
   (first (select (fn [[vertex-id vertex-body]] (= id vertex-id)) vertices)))
 
 (defn body-by-id
-  "Find vertex by her id field. Return its body as is."
+  "Find vertex by its id field. Return its body as is."
   [id graph]
   ;; Get second element (vertex body) in first vertex in yield set.
   (second (vertex-by-id id graph)))
@@ -177,6 +177,19 @@
              (add-child id-parent
                         (first item-list)
                         graph))))
+
+(defn add-child-series
+  "Create new graph in which first passed vertex will be child of passed id, second passed vertex
+  will be child of first, and each passed vertex will be a high-order parent for rest of the vertex
+  list."
+  [id-parent item-list graph]
+  (if (empty? item-list)
+      graph
+      (let [cur-item (first item-list)
+            new-graph (add-child id-parent cur-item graph)]
+        (recur (id-by-body cur-item new-graph)
+               (rest item-list)
+               new-graph))))
 
 ;; ## Destroy section.
 

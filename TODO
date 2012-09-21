@@ -7,3 +7,9 @@ ETL-PROXY TODO ITEMS                                        -*- mode: org -*-
 ** Emacs-like single dot file configuration
 *** Hooks system
 *** Multimethods functionality extension
+** Graphic debugger with graph visualisation system.
+   Possibility of connection to the existing session and debug it through nREPL functionality is the main aim of this module.
+
+* Code fixes
+** delete-obvious-vertices strange behaviour.
+** write ALL tests.
