@@ -54,8 +54,7 @@
      [10 12]
      [11 10]}])
 
-(deftest route-test
-
+(deftest route-search-test
   (testing "Search route list from 1 to the 9 vertex in route-graph-example."
     (is (= (route-list 1 9 route-graph-example)
            (list #{[10 9] [3 5] [5 7] [1 3] [7 10]}
@@ -63,18 +62,36 @@
                  #{[10 9] [4 5] [5 7] [7 10] [1 4]}
                  #{[8 7] [10 9] [7 10] [1 4] [4 8]}
                  #{[8 9] [1 4] [4 8]}))))
-
   (testing "Expand route list which already contain shortest route."
-    (is (= (expand-route-tail 1
-                              9
-                              (list #{[3 5] [5 7] [1 3]}
+    (is (= (expand-route-tail 1 9 '(#{[3 5] [5 7] [1 3]}
                                     #{[6 7] [1 3] [3 6]}
                                     #{[4 5] [5 7] [1 4]}
                                     #{[8 7] [1 4] [4 8]}
                                     #{[8 9] [1 4] [4 8]})
                               route-graph-example)
-           (list #{[3 5] [5 7] [1 3] [7 10]}
-                 #{[6 7] [1 3] [3 6] [7 10]}
-                 #{[4 5] [5 7] [7 10] [1 4]}
-                 #{[8 7] [7 10] [1 4] [4 8]}
-                 #{[8 9] [1 4] [4 8]})))))
+           '(#{[3 5] [5 7] [1 3] [7 10]}
+             #{[6 7] [1 3] [3 6] [7 10]}
+             #{[4 5] [5 7] [7 10] [1 4]}
+             #{[8 7] [7 10] [1 4] [4 8]}
+             #{[8 9] [1 4] [4 8]})))))
+
+(deftest route-purge-test
+  (testing "Check following deletion rules with routes."
+    ;; Delete one obvious edge with tree equal complex routes.
+    (is (= (delete-obvious-edges
+            (tie-vertex 2 [#{[2 ["A" "B" "C"]] [1 "ROOT"] [4 "A"] [5 "B"] [6 "C"] [3 "LOWER"]}
+                           #{[4 3] [2 3] [1 2] [2 4] [2 5] [2 6] [6 3] [5 3]}]))
+           [#{[1 "ROOT"] [4 "A"] [5 "B"] [6 "C"] [3 "LOWER"]}
+            #{[1 4] [1 5] [1 6] [4 3] [6 3] [5 3]}]))
+    ;; The same but other elements.
+    (is (= (delete-obvious-edges
+            (tie-vertex 2 [#{[1 "ROOT"] [6 '(:b "B")] [5 '(:c "C")] [4 '(:a "A")] [2 {:a "A", :c "C", :b "B"}] [3 "LOWER"]}
+                           #{[4 3] [2 3] [1 2] [2 4] [2 5] [2 6] [6 3] [5 3]}]))
+           [#{[1 "ROOT"] [6 '(:b "B")] [5 '(:c "C")] [4 '(:a "A")] [3 "LOWER"]}
+            #{[1 4] [1 5] [1 6] [4 3] [6 3] [5 3]}]))
+    ;; Delete one obvious edge with one equal complex route.
+    (is (= (delete-obvious-edges
+            (tie-vertex 2 [#{[2 '("A" "B" "C")] [1 "ROOT"] [4 "A"] [5 "B"] [6 "C"] [3 "LOWER"]}
+                           #{[2 3] [4 5] [5 6] [1 2] [2 4] [6 3]}]))
+           [#{[1 "ROOT"] [4 "A"] [5 "B"] [6 "C"] [3 "LOWER"]}
+            #{[1 4] [4 5] [5 6] [6 3]}]))))

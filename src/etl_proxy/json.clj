@@ -142,11 +142,9 @@
 (defn simple-graph?
   "Return true if graph contain only simple vertices."
   [graph]
-  (= (list)
-     ((fn [[vertices edges]]
-        ;; Return list of non-terminal vertices from graph.
-        (filter #(not (simple-body? %)) vertices))
-      graph)))
+  (empty?
+   ;; Return list of non-terminal vertices from graph.
+   (filter #(not (simple-body? %)) (bodies graph))))
 
 ;; So now as we can determine that all vertices are simple or not we can simplify our graph
 ;; recursively until all nested expressions will deduced into their terminal state. To solve this we

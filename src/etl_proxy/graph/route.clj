@@ -115,7 +115,7 @@
   "This function is a recursive version of `expand-route-list' which will stop evaluation on empty
   list of childs of not end points in the list of routes."
   [start end sub-routes graph]
-  (if (= (list)
+  (if (empty?
          ;; List of all childs of end vertices.
          (mapcat
           (fn [route]
@@ -156,7 +156,7 @@
   ((fn [[vertices edges]]
      (vector vertices
              (select (fn [[parent child]]
-                       (= (list [parent child])
+                       (= (list #{[parent child]})
                           (route-list parent child graph)))
                      edges)))
    graph))
