@@ -1,15 +1,53 @@
 ETL-PROXY TODO ITEMS                                        -*- mode: org -*-
 
-* README
-** Draw Ergo-Proxy anime stile title art
+* Information transformation
+** Graph module
+*** CRUD
+**** Denied direct access to the graph data structure
+     We haven't access to graph data structure except declared functions. Clear all [vertices edges]
+     pattern matching. Check all other modules for this.
+**** Write module tests
+     Get tree structure from route test.
+**** Document module in the story manner
+*** Transform module
+**** Transformation mechanism
+     Define multimethod based approach for recursive graph transformation.
+     Get base principle from json module.
+**** Graph equality function
+** JSON module
+*** Parser
+    Rewrite module in transformation multimethods manner.
+*** Generator
+    Create module with complex opposite functionality to the module above.
 
-* Configuration
+* Service configuration
 ** Emacs-like single dot file configuration
+   .etlrc or something like this.
 *** Hooks system
 *** Multimethods functionality extension
-** Graphic debugger with graph visualisation system.
-   Possibility of connection to the existing session and debug it through nREPL functionality is the main aim of this module.
 
-* Code fixes
-** delete-obvious-vertices strange behaviour.
-** write ALL tests.
+* Session management
+  Session manager is a system core. We will follow simple principle:
+  - Accept network message
+  - Do MongoDB transaction as "ADD TASK"
+  - Process all tasks in graph processing module as separate thread
+  - Do MongoDB transaction as "TASK RESULT"
+  - Send result to the client
+  - Clear finished tasks
+** Task scheduler
+   Look for tasks in the storage and process it with optimal load.
+** Connection manager
+   Insert task into storage when message come to server.
+   Current connection thread becoming to sleep.
+   Look for finished tasks and send result to client.
+   Close session after success result sending.
+** MongoDB based session save session store
+   Build in scheduler for clear closed session.
+** Http(s) based network transport level
+
+* Destination graphic debugger with graph visualisation system
+  Possibility of connection to the existing session by session ID and debug it through nREPL functionality is the
+  main aim of this client.
+
+* README file
+** Draw Ergo-Proxy anime stile title art
