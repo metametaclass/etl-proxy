@@ -9,16 +9,11 @@ ETL-PROXY TODO ITEMS                                        -*- mode: org -*-
 **** Write module tests
      Get tree structure from route test.
 **** Document module in the story manner
-*** Transform module
-**** Transformation mechanism
-     Define multimethod based approach for recursive graph transformation.
-     Get base principle from json module.
-**** Graph equality function
 ** JSON module
-*** Parser
-    Rewrite module in transformation multimethods manner.
 *** Generator
     Create module with complex opposite functionality to the module above.
+*** Parser
+    Fix infinite recursion on big expressions.
 
 * Service configuration
 ** Emacs-like single dot file configuration

@@ -44,5 +44,5 @@
     graph
     (recur stop? cur-item? (process-vertex-list
                             (map (fn [body] (id-by-body body graph))
-                                 (filter cur-item? graph))
+                                 (filter cur-item? (bodies graph)))
                             graph))))
