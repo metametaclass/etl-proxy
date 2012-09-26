@@ -1,4 +1,4 @@
-(ns etl-proxy.graph_test
+(ns etl-proxy.graph_route_test
   (:use clojure.test
         etl-proxy.graph.crud
         etl-proxy.graph.route))

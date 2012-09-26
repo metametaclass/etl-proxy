@@ -44,11 +44,11 @@
 ;; action. It is a parent-child relation between A -> C objects when we already has A -> B -> C. So
 ;; resulted graph mast be bring to a light form of graph.
 
-(defmethod vertex-processor :default
+(defmethod transform-vertex :default
   [id graph]
   graph)
 
-(defmethod vertex-processor clojure.lang.PersistentVector
+(defmethod transform-vertex clojure.lang.PersistentVector
   [id graph]
   ;; At this function we must get vertex of vector type and add its elements as child for it.
   ;; Then we get list of old childs and list of newly added vector elements and add edges which
@@ -68,7 +68,7 @@
       id ;; This is old non-simplified vertex id and it must be purged from graph.
       (add-edges-list new-relations new-graph)))))
 
-(defmethod vertex-processor clojure.lang.PersistentArrayMap
+(defmethod transform-vertex clojure.lang.PersistentArrayMap
   [id graph]
   ;; This function simplify accepted id's body type in the hash-map manner. As we accept it we must
   ;; simple substitute it into same tuples vector of key-value lists extracted from current map.
@@ -89,7 +89,7 @@
       id ;; This is old non-simplified vertex id and it must be purged from graph.
       (add-edges-list new-relations new-graph)))))
 
-(defmethod vertex-processor clojure.lang.PersistentList
+(defmethod transform-vertex clojure.lang.PersistentList
   [id graph]
   ;; At this function we must get vertex of list type and then process it in sequence manner. First
   ;; element of list must be a direct child of accepted vertex. Last element of list must be a
@@ -111,8 +111,14 @@
 
 ;; ## JSON processing principle.
 ;;
-;; TODO: Write documentation for JSON Cheshire single vertex procession.
-;; So here we come to the recursive processing of given nested markup expressions.
+;; So here we come to the recursive processing of given nested markup expressions. To call function
+;; in recursive manner or not we must have any data to pass it as parameter at first time. Cheshire
+;; library parse string into single map. We can suppose it as graph with single vertex and without
+;; any edges. Then we define some rules following which we can split it into few smaller subgraphs
+;; and carry out their relations from hash-map hierarchy to the edges set. If we use graph
+;; transformation principle then we must have to predicate functions. First will return true when
+;; all vertices in the graph are "simple". It's a recursion stop predicate. Second will return true
+;; if accepted vertex body must be simplified into new subgraph.
 
 (defn complex-body?
   "Return true if accepted vertex can't be simplified. For simplification rules visit project
