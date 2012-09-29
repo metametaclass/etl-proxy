@@ -1,7 +1,7 @@
 ;; Copyright (c) 2012  Malyshev Artem  {-proofit404@gmail.com-}
 
 (ns etl-proxy.graph.comparison
-  (:use etl-proxy.graph.crud))
+  (:use [etl-proxy.graph define crud]))
 
 ;; ## Several graph analyse tool.
 ;;

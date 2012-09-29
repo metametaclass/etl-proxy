@@ -2,20 +2,9 @@ ETL-PROXY TODO ITEMS                                        -*- mode: org -*-
 
 * Information transformation
 ** Graph module
-*** CRUD
-**** Denied direct access to the graph data structure
-     We haven't access to graph data structure except declared functions. Clear all [vertices edges]
-     pattern matching. Check all other modules for this.
-**** Write module tests
-     Get tree structure from route test.
-**** Document module in the story manner
 ** JSON module
 *** Generator
     Create module with complex opposite functionality to the module above.
-*** Parser
-    Fix infinite recursion on big expressions. Its occur because of type checking in vertex
-    transformation mechanism. Persistent hash map doesn't satisfy to the persistent array map and
-    process in the simple vertices manner. And stop? function consider this graph as complex.
 
 * Service configuration
 ** Emacs-like single dot file configuration

@@ -2,9 +2,7 @@
 
 (ns etl-proxy.json.parser
   (:use cheshire.core
-        etl-proxy.graph.crud
-        etl-proxy.graph.route
-        etl-proxy.graph.transform))
+        [etl-proxy.graph define crud route]))
 
 ;; ## Convert JSON markup language into graph data structure.
 ;;
@@ -44,17 +42,19 @@
 ;; action. It is a parent-child relation between A -> C objects when we already has A -> B -> C. So
 ;; resulted graph mast be bring to a light form of graph.
 
-(defmethod transform-vertex :default
-  [id graph]
-  graph)
+(defprotocol JsonParser
+  (decompose-json [body graph]
+    "This function process graph element in manner specified by passed body type. It return new
+  graph as result of it evaluation."))
 
-(defmethod transform-vertex clojure.lang.PersistentVector
-  [id graph]
+(extend-type clojure.lang.IPersistentVector
+  JsonParser
+  (decompose-json [body graph]
   ;; At this function we must get vertex of vector type and add its elements as child for it.
   ;; Then we get list of old childs and list of newly added vector elements and add edges which
   ;; provide new element as new parents for all old child.
   (let [;; Old body which must be purged from graph.
-        body (body-by-id id graph)
+        id (id-by-body body graph)
         ;; New graph with added newly elements as childs.
         new-graph (add-child-list id body graph)
         ;; List of old childs of accepted vector.
@@ -66,14 +66,15 @@
     (delete-obvious-edges
      (tie-vertex
       id ;; This is old non-simplified vertex id and it must be purged from graph.
-      (add-edges-list new-relations new-graph)))))
+      (add-edges-list new-relations new-graph))))))
 
-(defmethod transform-vertex clojure.lang.PersistentArrayMap
-  [id graph]
+(extend-type clojure.lang.IPersistentMap
+  JsonParser
+  (decompose-json [body graph]
   ;; This function simplify accepted id's body type in the hash-map manner. As we accept it we must
   ;; simple substitute it into same tuples vector of key-value lists extracted from current map.
   (let [;; Old body which must be purged from graph.
-        body (body-by-id id graph)
+        id (id-by-body body graph)
         ;; Because hash-map can be adduced into vector by body simplifying function we just use its.
         new-body (apply vector (map (fn [[key value]] (list key value)) (body-by-id id graph)))
         ;; New graph with body adduced into vector form.
@@ -87,15 +88,16 @@
     (delete-obvious-edges
      (tie-vertex
       id ;; This is old non-simplified vertex id and it must be purged from graph.
-      (add-edges-list new-relations new-graph)))))
+      (add-edges-list new-relations new-graph))))))
 
-(defmethod transform-vertex clojure.lang.PersistentList
-  [id graph]
+(extend-type clojure.lang.IPersistentList
+  JsonParser
+  (decompose-json [body graph]
   ;; At this function we must get vertex of list type and then process it in sequence manner. First
   ;; element of list must be a direct child of accepted vertex. Last element of list must be a
   ;; high-order parent to all childs of accepted vertex.
   (let [;; Old body which must be purged from graph.
-        body (body-by-id id graph)
+        id (id-by-body body graph)
         ;; New graph with added newly element as childs series for accepted body.
         new-graph (add-child-series id body graph)
         ;; List of old childs of accepted vector.
@@ -107,7 +109,7 @@
     (delete-obvious-edges
      (tie-vertex
       id ;; This is old non-simplified vertex id and it must be purged from graph.
-      (add-edges-list new-relations new-graph)))))
+      (add-edges-list new-relations new-graph))))))
 
 ;; ## JSON processing principle.
 ;;
@@ -120,7 +122,7 @@
 ;; all vertices in the graph are "simple". It's a recursion stop predicate. Second will return true
 ;; if accepted vertex body must be simplified into new subgraph.
 
-(defn complex-body?
+(defn json-container?
   "Return true if accepted vertex can't be simplified. For simplification rules visit project
   documentation."
   [body]
@@ -128,24 +130,19 @@
       (vector? body)
       (map? body)))
 
-(defn simple-graph?
+(defn json-free?
   "Return true if graph contain only simple vertices."
   [graph]
   (empty?
    ;; Return list of non-terminal vertices from graph.
-   (filter (fn [body] (complex-body? body))
+   (filter (fn [body] (json-container? body))
            (bodies graph))))
-
-(defn simplify-graph
-  "Accept graph data structure and simplify it recursively until graph become to a simple variant of
-  graph."
-  [graph]
-  (transform-graph simple-graph? complex-body? graph))
 
 (defn json2graph
   "Accept json string and recursively convert it into simple graph."
   [json]
-  (simplify-graph
-   (add-vertex
-    (parse-string json)
-    empty-graph)))
+  (transform-graph
+   json-free?
+   json-container?
+   decompose-json
+   (add-vertex (parse-string json) empty-graph)))

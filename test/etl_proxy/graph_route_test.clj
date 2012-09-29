@@ -1,28 +1,8 @@
 (ns etl-proxy.graph_route_test
   (:use clojure.test
-        etl-proxy.graph.crud
-        etl-proxy.graph.route))
+        [etl-proxy.graph crud route]))
 
 ;; Define few graphs for our experiments.
-
-(def tree-graph-example
-  [#{[1 "Root"]
-     [2 "Level 1 1"]
-     [3 "Level 1 2"]
-     [4 "Level 1 3"]
-     [5 "Level 2 1"]
-     [6 "Level 2 2"]
-     [7 "Level 2 3"]
-     [8 "Level 2 4"]
-     [9 "Level 2 5"]}
-   #{[1 2]
-     [1 3]
-     [1 4]
-     [2 5]
-     [2 6]
-     [3 7]
-     [4 8]
-     [4 9]}])
 
 (def route-graph-example
   [#{[1  "A"]

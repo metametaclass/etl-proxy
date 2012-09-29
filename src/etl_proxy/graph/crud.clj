@@ -1,41 +1,10 @@
 ;; Copyright (c) 2012  Malyshev Artem  {-proofit404@gmail.com-}
 
 (ns etl-proxy.graph.crud
-  (:use clojure.set))
+  (:use clojure.set
+        etl-proxy.graph.define))
 
-;; ## Graph processing module.
-;;
-;; The main aim of this module is definition of graph data structure and basic functions above
-;; it. Any graph in this program will defined as tuple of vertices set and edges set. Situation in which
-;; some edge bind one or both vertices that doesn't members of vertices set will be considered as error.
-;;
-;; Basic module data structure:
-;;
-;; - graph := [#{vertex} #{edge}]
-;; - vertex  := [id body]
-;; - edge   := [id id]
-;; - route := #{edge}
-;; - id - unique natural number which must be reevaluated in every graph transformation.
-;; - body - arbitrary data type which can express necessary abstract data.
-;;
-
-(def empty-graph [#{} #{}])
-
-;; All graph modification must accomplish with functions which accept one processed item and
-;; intended graph. All of this functions return new modified graph as result. If you have some sort
-;; of such function and you need to process list of items, then you can use genetic definition
-;; below. It is a simple way to recursive process graph.
-
-(defn list-action-on-graph
-  "Create new graph comprising all new items from list processed by fun."
-  [fun]
-  (fn [item-list graph]
-    (if (empty? item-list)
-      graph
-      (recur (rest item-list)
-             (fun (first item-list) graph)))))
-
-;; ## CRUD.
+;; ## Create Read Update Delete graph module.
 ;; 
 ;; Design of this module suppose follow for the CRUD principle. Division module structure made with
 ;; correspond to "one volume equal one letter of CRUD word".
@@ -58,16 +27,6 @@
 
 ;; ## Read section.
 
-(defn ids
-  "Create list of all graph indices."
-  [[vertices edges]]
-  (set (map first vertices)))
-
-(defn bodies
-  "Create vertices contents list with edges set lost."
-  [[vertices edges]]
-  (set (map second vertices)))
-
 (defn available-id
   "Return single id which isn't among to any vertex."
   [graph]
@@ -83,8 +42,8 @@
 
 (defn vertex-by-id
   "Find vertex by her id field. Return its as vector of id and body."
-  [id [vertices edges]]
-  (first (select (fn [[vertex-id vertex-body]] (= id vertex-id)) vertices)))
+  [id graph]
+  (first (select (fn [[vertex-id vertex-body]] (= id vertex-id)) (vertices graph))))
 
 (defn body-by-id
   "Find vertex by its id field. Return its body as is."
@@ -94,27 +53,27 @@
 
 (defn id-by-body
   "Find vertex index by it content."
-  [body [vertices edges]]
+  [body graph]
   ;; Get first element (vertex id) in first vertex in yield set.
-  (first (first (select (fn [[vertex-id vertex-body]] (= body vertex-body)) vertices))))
+  (first (first (select (fn [[vertex-id vertex-body]] (= body vertex-body)) (vertices graph)))))
 
 (defn relation-childs
   "Return all vertices id with which current vertex is a parent (its childs)."
-  [id [vertices edges]]
-  (map second (filter (fn [[parent child]] (= id parent)) edges)))
+  [id graph]
+  (map second (filter (fn [[parent child]] (= id parent)) (edges graph))))
 
 (defn relation-parents
   "Return all vertices id with which current vertex is a child (its parents)."
-  [id [vertices edges]]
-  (map first (filter (fn [[parent child]] (= id child)) edges)))
+  [id graph]
+  (map first (filter (fn [[parent child]] (= id child)) (edges graph))))
 
 (defn edges-subset
   "Return set of edges childs and parents correspond accepted two list."
-  [parents-list childs-list [vertices edges]]
+  [parents-list childs-list graph]
   (select (fn [[parent child]]
             (and (not= (list) (filter #(= parent %) parents-list))
                  (not= (list) (filter #(= child %) childs-list))))
-          edges))
+          (edges graph)))
 
 ;; ## Update section.
 ;;
@@ -126,14 +85,11 @@
   "Create new graph with specified vertex."
   [body graph]
   (if-not (graph-member? body graph)
-    ((fn [[vertices edges]]
-       (vector (conj vertices
-                     ;; This is new unique vertex for graph.
-                     (vector (available-id graph) body))
-               edges))
-     ;; Apply conjunction of new vertex to graph.
-     graph)
-    ;; Return graph as is.
+    (vector (conj (vertices graph)
+                  ;; This is new unique vertex for graph.
+                  (vector (available-id graph) body))
+            (edges graph))
+    ;; OR return graph as is.
     graph))
 
 (def add-vertices-list (list-action-on-graph add-vertex))
@@ -143,12 +99,9 @@
   [edge graph]
   (if ;; Check that both ids point to existent vertices.
       (subset? (set edge) (ids graph))
-    ((fn [[vertices edges]]
-       (vector vertices
-               (conj edges edge)))
-     ;; Apply conjunction of new edge to graph.
-     graph)
-    ;; Return graph as is.
+    (vector (vertices graph)
+            (conj (edges graph) edge))
+    ;; OR return graph as is.
     graph))
 
 (def add-edges-list (list-action-on-graph add-edge))
@@ -196,19 +149,19 @@
 (defn delete-vertex
   "Delete vertex from graph, clear its edges."
   [id graph]
-  ((fn [[vertices edges]]
-     (vector
-      (disj vertices (vertex-by-id id graph))
-      ;; Edges set without any object parent or child relations.
-      (difference edges (select (fn [[parent child]] (or (= parent id) (= child id))) edges))))
-   graph))
+  (vector
+   (disj (vertices graph) (vertex-by-id id graph))
+   ;; Edges set without any object parent or child relations.
+   (difference (edges graph)
+               (select (fn [[parent child]] (or (= parent id) (= child id)))
+                       (edges graph)))))
 
 (def delete-vertices-list (list-action-on-graph delete-vertex))
 
 (defn delete-edge
   "Delete edge (bind) between existing vertices."
-  [edge [vertices edges]]
-  (vector vertices (disj edges edge)))
+  [edge graph]
+  (vector (vertices graph) (disj (edges graph) edge)))
 
 ;; Main difference between tie and delete functions is in bind processing after vertex remove. For
 ;; example, we have three bound object A -> B -> C with parent -> child relation type and we need
@@ -248,7 +201,7 @@
 (defn delete-self-loops
   "Return clear graph without relations between objects with it self (self loops). For example for
   object A remove A -> A relation."
-  [[vertices edges]]
-  (vector vertices
+  [graph]
+  (vector (vertices graph)
           (select (fn [[parent child]] (not= parent child))
-                  edges)))
+                  (edges graph))))

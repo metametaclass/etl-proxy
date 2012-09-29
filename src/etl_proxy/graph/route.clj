@@ -1,7 +1,7 @@
 ;; Copyright (c) 2012  Malyshev Artem  {-proofit404@gmail.com-}
 
 (ns etl-proxy.graph.route
-  (:use etl-proxy.graph.crud
+  (:use [etl-proxy.graph define crud]
         clojure.set))
 
 ;; ## Graph route analyze tools.
@@ -153,10 +153,8 @@
   "Return clear graph without obvious direct relations between objects. For example for vertex sequence
   expressed through A -> B -> C and direct A -> C edges last will deleted from graph."
   [graph]
-  ((fn [[vertices edges]]
-     (vector vertices
-             (select (fn [[parent child]]
-                       (= (list #{[parent child]})
-                          (route-list parent child graph)))
-                     edges)))
-   graph))
+  (vector (vertices graph)
+          (select (fn [[parent child]]
+                    (= (list #{[parent child]})
+                       (route-list parent child graph)))
+                  (edges graph))))
