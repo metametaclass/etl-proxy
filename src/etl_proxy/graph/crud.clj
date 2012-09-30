@@ -30,10 +30,12 @@
 (defn available-id
   "Return single id which isn't among to any vertex."
   [graph]
-  (inc
-   (reduce max
-           ;; Add null index to the id set if empty graph is occur.
-           (conj (ids graph) 0))))
+  ((fn [a id-set]
+     (if (contains? id-set a)
+       (recur (inc a) id-set)
+       a))
+   1 ;; Default index if empty graph occurs.
+   (ids graph)))
 
 (defn graph-member?
   "If body belong to any vertex in the graph, then function return true."

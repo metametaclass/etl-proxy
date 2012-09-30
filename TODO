@@ -2,9 +2,13 @@ ETL-PROXY TODO ITEMS                                        -*- mode: org -*-
 
 * Information transformation
 ** Graph module
+*** Define
+    Native graph rewriting system support as default mechanism of transform configuration process.
 ** JSON module
+*** Parser
+    Minimize use of route module functionality.
 *** Generator
-    Create module with complex opposite functionality to the module above.
+    Create module with complex opposite functionality to the parser module.
 
 * Service configuration
 ** Emacs-like single dot file configuration
