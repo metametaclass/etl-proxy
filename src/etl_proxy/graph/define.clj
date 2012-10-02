@@ -78,27 +78,39 @@
 ;; we will work with vertex set as with sequence of complex bodies.
 
 (defn transform-graph
-  "Recursively transform graph into other graph form based on multimethods approach.
+  "Recursively transform graph from one form into another.
   It accept following ever present parameters:
 
   * stop?
     ([graph])
     It is a function must return true when graph become to the desired form.
 
+  * item-category
+    ([graph])
+    High order function which return sequence of items entered into specified category. Defaults
+    values of this parameter is ids, bodies, vertices and edges functions.
+
   * item-filter? 
-    ([body])
-    This function must return true if you want to process vertex with accepted body.
+    ([item])
+    This function must return true if you want to process accepted vertex.
 
   * item-processor
-    ([body graph])
-    This function will used for transform accepted body in the specified graph and return
-    new modified graph as it result."
-  [stop? item-filter? item-processor graph]
+    ([item graph])
+    This function will used for transform accepted item in the specified graph and return
+    new modified graph as it result.
+
+  Example: to rewrite your graph with capitalization of all strings use this:
+
+    (defn all-vertices-are-capital? [graph] ...)
+    (defn capitalize-vertex [body graph] ...)
+    (transform-graph all-vertices-are-capital? bodies string? capitalize-vertex graph)"
+  [stop? item-category item-filter? item-processor graph]
   (if (stop? graph)
     graph
     (recur stop?
+           item-category
            item-filter?
            item-processor
            ((list-action-on-graph item-processor)
-            (filter item-filter? (bodies graph))
+            (filter item-filter? (item-category graph))
             graph))))

@@ -32,15 +32,15 @@
 ;;   start is high-order parent for rest of list" rule. For example if we have some graph like A ->
 ;;   (B C D) -> E then we will have resulted graph as A -> B -> C -> D -> E.
 ;;
-;; At this point we have problem we can't change body of any vertex without automatic changing its id.
-;; This behaviour result in lost edges relation validity. I solve this problem in simple manner.
+;; At this point we have problem we can't change body of any vertex without automatic changing its
+;; id. This behaviour result in lost edges relation validity. I solve this problem in simple manner.
 ;; Instead of changing body of existed vertex we will add its simplified version as child _AND_ as
-;; parent to it, then add non simplified childs to simplified parent and finally _TIE_ non simplified
-;; vertex. Those action will result in automatic reevaluate edge indices in correct manner. When we tie
-;; non-simplified vertex new edges appear excepting new vertex, because new simplified vertex fit as self
-;; parent and child to non-simplified. There is some kinds of parasite edges appearing throw this
-;; action. It is a parent-child relation between A -> C objects when we already has A -> B -> C. So
-;; resulted graph mast be bring to a light form of graph.
+;; parent to it, then add non simplified childs to simplified parent and finally _TIE_ non
+;; simplified vertex. Those action will result in automatic reevaluate edge indices in correct
+;; manner. When we tie non-simplified vertex new edges appear excepting new vertex, because new
+;; simplified vertex fit as self parent and child to non-simplified. There is some kinds of parasite
+;; edges appearing throw this action. It is a parent-child relation between A -> C objects when we
+;; already has A -> B -> C. So resulted graph mast be bring to a light form of graph.
 
 (defprotocol JsonParser
   (decompose-json [body graph]
@@ -143,6 +143,7 @@
   [json]
   (transform-graph
    json-free?
+   bodies
    json-container?
    decompose-json
    (add-vertex (parse-string json) empty-graph)))
