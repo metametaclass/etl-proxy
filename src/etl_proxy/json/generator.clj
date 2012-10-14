@@ -2,7 +2,7 @@
 
 (ns etl-proxy.json.generator
   (:use cheshire.core
-        [etl-proxy.graph define comparison]))
+        [etl-proxy.graph define comparison crud]))
 
 ;; ## Generate JSON mark up expression from graph data structure.
 ;;
@@ -30,14 +30,69 @@
 ;;   current rule application will result into A -> [B C D] -> E graph.
 ;;
 
+(defn map-comprehension?
+  "This function return true in body of accepted vertex can be converted into map."
+  [id graph]
+  ;; Vertex must be a vector and each of it element must be a list of two elements.
+  (let [body (body-by-id id graph)]
+    (and (vector? body)
+         (apply = (map
+                   (fn [key-value]
+                     (and (list? key-value)
+                          (= 2 (count key-value))))
+                       body)))))
+
 (defmulti compose-json
   "This function return new graph where accepted vertex will contain json map expressed from his
   parent-child relations."
   (fn [id graph]
     (cond
-     (level-topology? id graph) :vector-rule
-     (series-member? id graph) :curcuit-rule
-     :else :terminal-rule)))
+     (map-comprehension? id graph) :map-rule
+     (level-topology? id graph)    :vector-rule
+     (series-member? id graph)     :series-rule)))
+
+(defmethod compose-json :vector-rule
+  [id graph]
+  (let [;; Build body of new vertex from level ids and conjunct it into graph.
+        level-as-single (apply vector (map #(body-by-id % graph) (get-level id graph)))
+        new-graph (add-vertex level-as-single graph)
+        single-id (id-by-body level-as-single new-graph)
+        ;; Build new relations logically equals to old level.
+        bind-to-top (map (fn [parent] (vector parent single-id)) (relation-parents id graph))
+        bind-to-bottom (map (fn [child] (vector single-id child)) (relation-childs id graph))]
+    ;; Add all parent-child relations to new vertex.
+    (add-edges-list (concat bind-to-top bind-to-bottom)
+                    ;; Remove whole level from graph.
+                    (delete-vertices-list (get-level id graph) new-graph))))
+
+(defmethod compose-json :series-rule
+  [id graph]
+  (let [;; Create body for new element and add it to graph.
+        series (get-series id graph)
+        series-as-single (map #(body-by-id % graph) series)
+        new-graph (add-vertex series-as-single graph)
+        single-id (id-by-body series-as-single new-graph)
+        ;; Build relations for new element.
+        bind-to-top (map (fn [parent] (vector parent single-id)) (relation-parents (first series) graph))
+        bind-to-bottom (map (fn [child] (vector single-id child)) (relation-childs (last series) graph))]
+    ;; Add all parent-child relations to new vertex.
+    (add-edges-list (concat bind-to-top bind-to-bottom)
+                    ;; Remove whole series from graph.
+                    (delete-vertices-list series new-graph))))
+
+(defmethod compose-json :map-rule
+  [id graph]
+  (let [;; Convert vector of tuple lists into map.
+        new-body (apply merge (map #(apply hash-map %) (body-by-id id graph)))
+        ;; Build in new vertex.
+        new-graph (add-vertex new-body graph)
+        new-id (id-by-body new-body new-graph)
+        bind-to-top (map (fn [parent] (vector parent new-id)) (relation-parents id graph))
+        bind-to-bottom (map (fn [child] (vector new-id child)) (relation-childs id graph))]
+    ;; Replace origin id with new map.
+    (add-edges-list (concat bind-to-top bind-to-bottom)
+                    ;; Remove whole series from graph.
+                    (delete-vertex id new-graph))))
 
 ;; ## Down-Top processing approach.
 ;;

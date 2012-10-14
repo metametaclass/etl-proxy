@@ -57,7 +57,9 @@
 ;; level topology. In this situation few vertices occurs with equal set of parents and childs. Then
 ;; we say "Such vertices topology is a same level topology." For example B, C and D vertices occur
 ;; the same level topology in A -> B -> E, A -> C -> E, A -> D -> E graph. But there is no same
-;; level in A -> B -> G -> E, A -> C -> E, A -> D -> W -> E graph.
+;; level in A -> B -> G -> E, A -> C -> E, A -> D -> W -> E graph. Level topology contain at least
+;; two vertices in it. One element can't be a level because at this point it became a series member.
+;; We will give series definition below in this section.
 
 (defn level-topology?
   "This function return true when given vertex is a part of any level topology in graph."
@@ -65,16 +67,21 @@
   (let [level-parents (relation-parents id graph)
         level-childs (relation-childs id graph)
         level-from-top (map (fn [parent] (set (relation-childs parent graph))) level-parents)
-        level-from-bottom (map (fn [child] (set (relation-parents child graph))) level-childs)]
-    (and
-     ;; All parents has same child level.
-     (apply = level-from-top)
-     ;; All childs has same parent level.
-     (apply = level-from-bottom)
-     ;; Levels above are equal.
-     (= level-from-top level-from-bottom))))
+        level-from-bottom (map (fn [child] (set (relation-parents child graph))) level-childs)
+        level (concat level-from-top level-from-bottom)]
+    ;; Levels above are equal.
+    (and (apply = level)
+         (> (count (first level)) 1))))
 
-(defn get-level)
+(defn get-level
+  "This function return vertices level as vector of its ids. If specified vertex doesn't occur to any
+  level then this function return nil."
+  [id graph]
+  (when (level-topology? id graph)
+    (let [level-parents (relation-parents id graph)]
+      (if-not (empty? level-parents)
+        (apply vector (relation-childs (first level-parents) graph))
+        (apply vector (relation-parents (first (relation-childs id graph)) graph))))))
 
 ;; Second topology at this section is a series topology. Series is an _N_ vertices bound with
 ;; _N_-_1_ edges in circuit manner. That is first vertex bound with second, second with third, etc.
@@ -95,7 +102,9 @@
           (= 1 (count (relation-parents (first childs-list) graph)))))))
 
 (defn get-series
-  "This function return full series in which specified element occurs as list."
+  "This function return full series in which specified element occurs as list. First element of
+  series is a highest order element in the graph parent-child relation. And last correspondingly is
+  a lowest."
   [id graph]
   ;; Find all series elements by recursive rising and lowering parent-child relation until series
   ;; membership predicate is satisfied.

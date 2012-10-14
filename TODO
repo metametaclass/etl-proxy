@@ -6,7 +6,8 @@ ETL-PROXY TODO ITEMS                                        -*- mode: org -*-
     Native graph rewriting system support as default mechanism of transform configuration process.
 ** JSON module
 *** Parser
-    Minimize use of route module functionality.
+    Minimize use of route module functionality. Rewrite module with deletion function instead of
+    tie vertex. We will not need to delete obvious edges because they will not occur any more.
 *** Generator
     Create module with complex opposite functionality to the parser module.
 
@@ -36,8 +37,8 @@ ETL-PROXY TODO ITEMS                                        -*- mode: org -*-
 ** Http(s) based network transport level
 
 * Destination graphic debugger with graph visualisation system
-  Possibility of connection to the existing session by session ID and debug it through nREPL functionality is the
-  main aim of this client.
+  Possibility of connection to the existing session by session ID and debug it through nREPL
+  functionality is the main aim of this client.
 
 * README file
 ** Draw Ergo-Proxy anime stile title art

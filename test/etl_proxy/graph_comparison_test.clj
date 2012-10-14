@@ -31,18 +31,28 @@
 (deftest level-topology-test
   (testing "Check level topology detection."
     (is (level-topology? 2 [#{[1 "ROOT"] [2 "A"] [3 "B"] [4 "C"] [5 "LOWER"]} #{[1 2] [1 3] [1 4] [2 5] [3 5] [4 5]}]))
-    (is (not (level-topology? 2 [#{[1 "ROOT"] [2 "A"] [3 "B"] [4 "C"] [5 "LOWER"]} #{[1 2] [2 3] [3 5] [1 4] [4 5]}])))))
+    (is (level-topology? 2 [#{[1 "ROOT"] [2 "A"] [3 "B"] [4 "C"] [5 "LOWER-1"] [6 "LOWER-2"]} #{[1 2] [1 3] [1 4] [2 5] [3 5] [4 5] [2 6] [3 6] [4 6]}]))
+    (is (not (level-topology? 2 [#{[1 "ROOT"] [2 "A"] [3 "B"] [4 "C"] [5 "LOWER"]} #{[1 2] [2 3] [3 5] [1 4] [4 5]}]))))
+  (testing "Check getting level topology from graph."
+    (are [x ser] (= ser (get-level x [#{[1 "ROOT"] [2 "A"] [3 "B"] [4 "C"] [5 "LOWER"]} #{[1 2] [1 3] [1 4] [2 5] [3 5] [4 5]}]))
+         2 [2 3 4]
+         3 [2 3 4]
+         4 [2 3 4])
+    (are [x ser] (= ser (get-level x [#{[1 "ROOT"] [2 "A"] [3 "B"] [4 "C"] [5 "LOWER"]} #{[1 2] [1 3] [1 4] [2 5] [3 5] [4 5]}]))
+         1 nil
+         5 nil)))
 
 (deftest series-topology-test
-  (let [graph [#{[1 "ROOT"] [2 :a] [3 "A"] [4 :b] [5 "B"] [6 :c] [7 "C"] [8 "LOWER"]} #{[1 2] [1 4] [1 6] [2 3] [4 5] [6 7] [3 8] [5 8] [7 8]}]]
-    (testing "Check series topology detection."
-      (are [x] (series-member? x graph)
-           2 3 4 5 6 7)
-      (are [x] (not (series-member? x graph))
-           1 8))
-    (testing "Check getting series from graph."
-      (are [x y ser] (= (get-series x graph) (get-series y graph) ser)
-           2 3 '(2 3)
-           4 5 '(4 5)
-           6 7 '(6 7)
-           1 8 nil))))
+  (testing "Check series topology detection."
+    (are [x] (series-member? x [#{[1 "ROOT"] [2 :a] [3 "A"] [4 :b] [5 "B"] [6 :c] [7 "C"] [8 "LOWER"]} #{[1 2] [1 4] [1 6] [2 3] [4 5] [6 7] [3 8] [5 8] [7 8]}])
+         2 3 4 5 6 7)
+    (are [x] (not (series-member? x [#{[1 "ROOT"] [2 :a] [3 "A"] [4 :b] [5 "B"] [6 :c] [7 "C"] [8 "LOWER"]} #{[1 2] [1 4] [1 6] [2 3] [4 5] [6 7] [3 8] [5 8] [7 8]}]))
+         1 8))
+  (testing "Check getting series from graph."
+    (are [x y ser] (= (get-series x [#{[1 "ROOT"] [2 :a] [3 "A"] [4 :b] [5 "B"] [6 :c] [7 "C"] [8 "LOWER"]} #{[1 2] [1 4] [1 6] [2 3] [4 5] [6 7] [3 8] [5 8] [7 8]}])
+                      (get-series y [#{[1 "ROOT"] [2 :a] [3 "A"] [4 :b] [5 "B"] [6 :c] [7 "C"] [8 "LOWER"]} #{[1 2] [1 4] [1 6] [2 3] [4 5] [6 7] [3 8] [5 8] [7 8]}])
+                      ser)
+         2 3 '(2 3)
+         4 5 '(4 5)
+         6 7 '(6 7)
+         1 8 nil)))
