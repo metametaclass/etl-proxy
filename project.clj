@@ -5,4 +5,6 @@
             :url "http://opensource.org/licenses/BSD-3-Clause"}
   :dependencies [[org.clojure/clojure "1.4.0"]
                  [cheshire "4.0.2"]]
-  :plugins [[lein-marginalia "0.7.1"]])
+  :plugins [[lein-marginalia "0.7.1"]
+            [lein-dependencies "0.1.0"]]
+  :min-lein-version "2.0.0")

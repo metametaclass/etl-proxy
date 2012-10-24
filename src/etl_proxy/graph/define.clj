@@ -1,4 +1,4 @@
-;; Copyright (c) 2012  Malyshev Artem  {-proofit404@gmail.com-}
+;; Copyright (c) 2012  Malyshev Artem  <proofit404@gmail.com>
 
 (ns etl-proxy.graph.define
   (:use clojure.set))

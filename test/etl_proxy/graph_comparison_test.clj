@@ -1,5 +1,3 @@
-;; Copyright (c) 2012  Malyshev Artem  {-proofit404@gmail.com-}
-
 (ns etl-proxy.graph_comparison_test
   (:use clojure.test
         etl-proxy.graph.comparison))
