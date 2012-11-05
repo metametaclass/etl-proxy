@@ -32,15 +32,6 @@
 ;;   start is high-order parent for rest of list" rule. For example if we have some graph like A ->
 ;;   (B C D) -> E then we will have resulted graph as A -> B -> C -> D -> E.
 ;;
-;; At this point we have problem we can't change body of any vertex without automatic changing its
-;; id. This behaviour result in lost edges relation validity. I solve this problem in simple manner.
-;; Instead of changing body of existed vertex we will add its simplified version as child _AND_ as
-;; parent to it, then add non simplified childs to simplified parent and finally _TIE_ non
-;; simplified vertex. Those action will result in automatic reevaluate edge indices in correct
-;; manner. When we tie non-simplified vertex new edges appear excepting new vertex, because new
-;; simplified vertex fit as self parent and child to non-simplified. There is some kinds of parasite
-;; edges appearing throw this action. It is a parent-child relation between A -> C objects when we
-;; already has A -> B -> C. So resulted graph mast be bring to a light form of graph.
 
 (defprotocol JsonParser
   (decompose-json [body graph]
@@ -50,66 +41,80 @@
 (extend-type clojure.lang.IPersistentVector
   JsonParser
   (decompose-json [body graph]
-  ;; At this function we must get vertex of vector type and add its elements as child for it.
-  ;; Then we get list of old childs and list of newly added vector elements and add edges which
-  ;; provide new element as new parents for all old child.
-  (let [;; Old body which must be purged from graph.
-        id (id-by-body body graph)
-        ;; New graph with added newly elements as childs.
-        new-graph (add-child-list id body graph)
-        ;; List of old childs of accepted vector.
-        restore-childs (relation-childs id graph)
-        ;; List of new parents from vector elements.
-        new-parents (map (fn [item] (id-by-body item new-graph)) body)
-        ;; List of edges providing new parent relations (direct product of two lists above).
-        new-relations (mapcat (fn [parent] (map (fn [child] (vector parent child)) restore-childs)) new-parents)]
-    (delete-obvious-edges
-     (tie-vertex
-      id ;; This is old non-simplified vertex id and it must be purged from graph.
-      (add-edges-list new-relations new-graph))))))
+    ;; At this function we must get vertex of vector type and add its elements as child for it.
+    ;; Then we get list of old children and list of newly added vector elements and add edges which
+    ;; provide new element as new parents for all old child.
+    (let [;; Old body which must be purged from graph.
+          id (id-by-body body graph)
+          ;; New graph with added newly elements.
+          new-graph (add-vertices-list body graph)
+          new-ids (map (fn [body-item] (id-by-body body-item new-graph)) body)
+          ;; List of new parents and children edges pointing to the new set of vertices.
+          ;; It is a direct product of two lists.
+          all-parents (mapcat
+                       (fn [parent]
+                         (map (fn [child]
+                                (vector parent child))
+                              new-ids))
+                       (relation-parents id graph))
+          all-children (mapcat
+                        (fn [child]
+                          (map (fn [parent]
+                                 (vector parent child))
+                               new-ids))
+                        (relation-children id graph))]
+      ;; Add all parent-child relations to new vertices.
+      (add-edges-list
+       (concat all-parents all-children)
+       ;; Remove whole level from graph.
+       (delete-vertex id new-graph)))))
 
 (extend-type clojure.lang.IPersistentMap
   JsonParser
   (decompose-json [body graph]
-  ;; This function simplify accepted id's body type in the hash-map manner. As we accept it we must
-  ;; simple substitute it into same tuples vector of key-value lists extracted from current map.
-  (let [;; Old body which must be purged from graph.
-        id (id-by-body body graph)
-        ;; Because hash-map can be adduced into vector by body simplifying function we just use its.
-        new-body (apply vector (map (fn [[key value]] (list key value)) (body-by-id id graph)))
-        ;; New graph with body adduced into vector form.
-        new-graph (add-child id new-body graph)
-        ;; List of childs of accepted map.
-        restore-childs (relation-childs id graph)
-        ;; List of edges which designate parent relation with new body.
-        new-relations (map (fn [child]
-                             (vector (id-by-body new-body new-graph) child))
-                           restore-childs)]
-    (delete-obvious-edges
-     (tie-vertex
-      id ;; This is old non-simplified vertex id and it must be purged from graph.
-      (add-edges-list new-relations new-graph))))))
+    ;; This function simplify accepted id's body type in the hash-map manner. As we accept it we must
+    ;; simple substitute it into same tuples vector of key-value lists extracted from current map.
+    (let [;; Old body which must be purged from graph.
+          id (id-by-body body graph)
+          ;; Because hash-map can be adduced into vector by body simplifying function we just use its.
+          new-body (apply vector (map (fn [[key value]] (list key value)) body))
+          ;; New graph with body adduced into vector form.
+          new-graph (add-vertex new-body graph)
+          new-id (id-by-body new-body new-graph)
+          ;; List of new parents and children edges pointing to the new set of vertices.
+          ;; It is a direct product of two lists.
+          all-parents (map (fn [parent] (vector parent new-id))
+                           (relation-parents id graph))
+          all-children (map (fn [child] (vector new-id child))
+                            (relation-children id graph))]
+      ;; Add all parent-child relations to new vertices.
+      (add-edges-list
+       (concat all-parents all-children)
+       ;; Remove whole level from graph.
+       (delete-vertex id new-graph)))))
 
 (extend-type clojure.lang.IPersistentList
   JsonParser
   (decompose-json [body graph]
-  ;; At this function we must get vertex of list type and then process it in sequence manner. First
-  ;; element of list must be a direct child of accepted vertex. Last element of list must be a
-  ;; high-order parent to all childs of accepted vertex.
-  (let [;; Old body which must be purged from graph.
-        id (id-by-body body graph)
-        ;; New graph with added newly element as childs series for accepted body.
-        new-graph (add-child-series id body graph)
-        ;; List of old childs of accepted vector.
-        restore-childs (relation-childs id graph)
-        ;; Last element in the series.
-        new-parent (id-by-body (last body) new-graph)
-        ;; List of edges providing last series element as new parent.
-        new-relations (map (fn [child] (vector new-parent child)) restore-childs)]
-    (delete-obvious-edges
-     (tie-vertex
-      id ;; This is old non-simplified vertex id and it must be purged from graph.
-      (add-edges-list new-relations new-graph))))))
+    ;; At this function we must get vertex of list type and then process it in sequence manner. First
+    ;; element of list must be a direct child of accepted vertex. Last element of list must be a
+    ;; high-order parent to all children of accepted vertex.
+    (let [;; Old body which must be purged from graph.
+          id (id-by-body body graph)
+          ;; New graph with added newly element as children series for accepted body.
+          new-graph (add-child-series id body graph)
+          new-ids (map (fn [item] (id-by-body item new-graph)) body)
+          ;; First element in the series must inherit all vertex parents.
+          all-parents (map (fn [parent] (vector parent (first new-ids)))
+                           (relation-parents id graph))
+          ;; Last element in the series must inherit all vertex children.
+          all-children (map (fn [child] (vector (last new-ids) child))
+                            (relation-children id graph))]
+      ;; Add all parent-child relations to new vertices.
+      (add-edges-list
+       (concat all-parents all-children)
+       ;; Remove whole level from graph.
+       (delete-vertex id new-graph)))))
 
 ;; ## JSON processing principle.
 ;;

@@ -30,7 +30,7 @@
            (map #(vector % child)
                 ;; Select all parents of tie id.
                 (map first (select (fn [[parent child]] (= child id)) edges))))
-         ;; Select all childs of tie id.
+         ;; Select all children of tie id.
          (map second (select (fn [[parent child]] (= parent id)) edges)))]
     (difference
      (union edges restore-edges)
@@ -77,7 +77,7 @@
 ;; point use follow approach. At any state of evaluation we can get some part of some number of
 ;; routes. At each step we can expand our sub routes on one edge. If concerned route has end point
 ;; in it, then we don't expand it any more. Evaluation of all simple routes list stops when we find
-;; all routes to the end vertex and other final vertex doesn't has any childs which can bring us to
+;; all routes to the end vertex and other final vertex doesn't has any children which can bring us to
 ;; the end vertex.
 ;;
 ;; In two functions below we use `sub-routes' definition. It is a list of routes or rather parts of
@@ -97,7 +97,7 @@
          (fn [child]
            (conj route (vector parent child)))
          ;; It's a list of edges spread from current end vertex to the new.
-         (relation-childs
+         (relation-children
           parent
           graph))))
     ;; We don't expand sub-routes which is route to end point already.
@@ -113,13 +113,13 @@
 
 (defn expand-route-tail-rec
   "This function is a recursive version of `expand-route-list' which will stop evaluation on empty
-  list of childs of not end points in the list of routes."
+  list of children of not end points in the list of routes."
   [start end sub-routes graph]
   (if (empty?
-         ;; List of all childs of end vertices.
+         ;; List of all children of end vertices.
          (mapcat
           (fn [route]
-            (relation-childs (route-end start route) graph))
+            (relation-children (route-end start route) graph))
           (filter
            (fn [sub-route]
              (not (route? start end sub-route)))

@@ -38,7 +38,17 @@
          4 [2 3 4])
     (are [x ser] (= ser (get-level x [#{[1 "ROOT"] [2 "A"] [3 "B"] [4 "C"] [5 "LOWER"]} #{[1 2] [1 3] [1 4] [2 5] [3 5] [4 5]}]))
          1 nil
-         5 nil)))
+         5 nil))
+  (testing "Testing complex level with elements which must be excluded from it."
+    ;; There is no level below because vertices with 8 and 12 ids doesn't appropriate to this rule.
+    (is (= nil ;; Not [2 3 8 12 19]
+           (get-level 2 [#{[1 "root"]
+                           [19 '("a" 1)]
+                           [2  '("b" 2)]
+                           [3  '("c" 3)]
+                           [8 "d"] [4 ["DA" "DB" "DC"]]}
+                           [12 "e"] [5 '("ea" 11)] [6 '("eb" 12)] [7 '("ec" 13)]
+                         #{[1 2] [1 3] [1 8] [1 12] [1 19] [12 5] [12 6] [12 7] [8 4]}])))))
 
 (deftest series-topology-test
   (testing "Check series topology detection."

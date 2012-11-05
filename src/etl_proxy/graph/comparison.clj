@@ -32,9 +32,9 @@
         ;; Key-value vectors list.
         (map (fn [body]
                (vector body
-                       ;; Set of childs bodies for current vertex.
+                       ;; Set of children bodies for current vertex.
                        (set (map (fn [child] (body-by-id child graph))
-                                 (relation-childs (id-by-body body graph) graph)))))
+                                 (relation-children (id-by-body body graph) graph)))))
              (bodies graph))))
 
 ;; For many reasons we need possibility of comparison two or more graphs. But we can't use direct
@@ -54,7 +54,7 @@
 ;; ## Topology analyze.
 ;;
 ;; At this section we will define function set for check vertex scope type. First of all we define
-;; level topology. In this situation few vertices occurs with equal set of parents and childs. Then
+;; level topology. In this situation few vertices occurs with equal set of parents and children. Then
 ;; we say "Such vertices topology is a same level topology." For example B, C and D vertices occur
 ;; the same level topology in A -> B -> E, A -> C -> E, A -> D -> E graph. But there is no same
 ;; level in A -> B -> G -> E, A -> C -> E, A -> D -> W -> E graph. Level topology contain at least
@@ -65,13 +65,19 @@
   "This function return true when given vertex is a part of any level topology in graph."
   [id graph]
   (let [level-parents (relation-parents id graph)
-        level-childs (relation-childs id graph)
-        level-from-top (map (fn [parent] (set (relation-childs parent graph))) level-parents)
-        level-from-bottom (map (fn [child] (set (relation-parents child graph))) level-childs)
-        level (concat level-from-top level-from-bottom)]
-    ;; Levels above are equal.
-    (and (apply = level)
-         (> (count (first level)) 1))))
+        level-children (relation-children id graph)
+        levels-from-top (map (fn [parent] (set (relation-children parent graph))) level-parents)
+        levels-from-bottom (map (fn [child] (set (relation-parents child graph))) level-children)
+        levels (concat levels-from-top levels-from-bottom)]
+    (and (not (empty? levels))
+         ;; Levels above are equal.
+         (apply = levels)
+         ;; Level contain more than one element.
+         (> (count (first levels)) 1)
+         ;; All elements of level have same collection of parents.
+         (apply = (map #(relation-parents % graph) (first levels)))
+         ;; All elements of level have same collection of children.
+         (apply = (map #(relation-children % graph) (first levels))))))
 
 (defn get-level
   "This function return vertices level as vector of its ids. If specified vertex doesn't occur to any
@@ -80,8 +86,8 @@
   (when (level-topology? id graph)
     (let [level-parents (relation-parents id graph)]
       (if-not (empty? level-parents)
-        (apply vector (relation-childs (first level-parents) graph))
-        (apply vector (relation-parents (first (relation-childs id graph)) graph))))))
+        (apply vector (relation-children (first level-parents) graph))
+        (apply vector (relation-parents (first (relation-children id graph)) graph))))))
 
 ;; Second topology at this section is a series topology. Series is an _N_ vertices bound with
 ;; _N_-_1_ edges in circuit manner. That is first vertex bound with second, second with third, etc.
@@ -92,14 +98,14 @@
   "This function return true if given vertex is a part of any series in graph."
   [id graph]
   (let [parents-list (relation-parents id graph)
-        childs-list (relation-childs id graph)]
+        children-list (relation-children id graph)]
     (or
      ;; Check for series beginning.
      (and (= 1 (count parents-list))
-          (= 1 (count (relation-childs (first parents-list) graph))))
+          (= 1 (count (relation-children (first parents-list) graph))))
      ;; Check for series end.
-     (and (= 1 (count childs-list))
-          (= 1 (count (relation-parents (first childs-list) graph)))))))
+     (and (= 1 (count children-list))
+          (= 1 (count (relation-parents (first children-list) graph)))))))
 
 (defn get-series
   "This function return full series in which specified element occurs as list. First element of
@@ -118,7 +124,7 @@
           ;; Recursive lowering.
           lower-list ((fn [child downs]
                         (if (series-member? child graph)
-                          (recur (first (relation-childs child graph)) (concat downs (list child)))
+                          (recur (first (relation-children child graph)) (concat downs (list child)))
                           downs))
                       id (list))]
       ;; Exclude one source vertex.

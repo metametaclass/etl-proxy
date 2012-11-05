@@ -5,7 +5,7 @@
         etl-proxy.graph.define))
 
 ;; ## Create Read Update Delete graph module.
-;; 
+;;
 ;; Design of this module suppose follow for the CRUD principle. Division module structure made with
 ;; correspond to "one volume equal one letter of CRUD word".
 
@@ -59,8 +59,8 @@
   ;; Get first element (vertex id) in first vertex in yield set.
   (first (first (select (fn [[vertex-id vertex-body]] (= body vertex-body)) (vertices graph)))))
 
-(defn relation-childs
-  "Return all vertices id with which current vertex is a parent (its childs)."
+(defn relation-children
+  "Return all vertices id with which current vertex is a parent (its children)."
   [id graph]
   (map second (filter (fn [[parent child]] (= id parent)) (edges graph))))
 
@@ -70,11 +70,11 @@
   (map first (filter (fn [[parent child]] (= id child)) (edges graph))))
 
 (defn edges-subset
-  "Return set of edges childs and parents correspond accepted two list."
-  [parents-list childs-list graph]
+  "Return set of edges children and parents correspond accepted two list."
+  [parents-list children-list graph]
   (select (fn [[parent child]]
             (and (not= (list) (filter #(= parent %) parents-list))
-                 (not= (list) (filter #(= child %) childs-list))))
+                 (not= (list) (filter #(= child %) children-list))))
           (edges graph)))
 
 ;; ## Update section.
@@ -123,7 +123,7 @@
              new-graph)))
 
 (defn add-child-list
-  "Create new graph in which all passed vertices will be childs of passed id."
+  "Create new graph in which all passed vertices will be children of passed id."
   [id-parent item-list graph]
   (if (empty? item-list)
       graph
@@ -171,14 +171,14 @@
 ;; not. With delete function we will lost relation between A and C objects.
 
 (defn tie-vertex
-  "Delete vertex from graph, clear its edges and create edges between its parents and childs for saving
+  "Delete vertex from graph, clear its edges and create edges between its parents and children for saving
   object relations without intermediate object."
   [id graph]
   ;; Create list of edges as direct multiply parent with child.
   (let [restore-edges (mapcat
                       (fn [parent]
                         (map #(vector parent %)
-                             (relation-childs id graph)))
+                             (relation-children id graph)))
                       (relation-parents id graph))]
     (delete-vertex id (add-edges-list restore-edges graph))))
 
@@ -195,10 +195,10 @@
   (let [;; Store graph without vertices accepted with roots.
         current-level-map (delete-vertices-list roots graph)
         ;; Store all child's from every roots vertex in the single list.
-        lower-level-childs (mapcat #(relation-childs % graph) roots)]
-    (if (empty? lower-level-childs)
+        lower-level-children (mapcat #(relation-children % graph) roots)]
+    (if (empty? lower-level-children)
       current-level-map
-      (recur lower-level-childs current-level-map))))
+      (recur lower-level-children current-level-map))))
 
 (defn delete-self-loops
   "Return clear graph without relations between objects with it self (self loops). For example for

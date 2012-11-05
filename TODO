@@ -6,10 +6,12 @@ ETL-PROXY TODO ITEMS                                        -*- mode: org -*-
     Native graph rewriting system support as default mechanism of transform configuration process.
 ** JSON module
 *** Parser
-    Minimize use of route module functionality. Rewrite module with deletion function instead of
-    tie vertex. We will not need to delete obvious edges because they will not occur any more.
+**** TODO
+     Fix single body parsing process for skipping it without matter of its body type (extend
+     protocol of non-sequences).
 *** Generator
     Create module with complex opposite functionality to the parser module.
+
 
 * Service configuration
 ** Emacs-like single dot file configuration
