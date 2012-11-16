@@ -1,0 +1,7 @@
+
+;; Local Variables:
+;; alias: "etl-proxy"
+;; build-command: "lein dependencies"
+;; run-command: "lein test"
+;; target-path: "."
+;; End:
