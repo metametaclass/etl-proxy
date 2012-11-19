@@ -4,4 +4,6 @@
 ;; build-command: "lein dependencies"
 ;; run-command: "lein test"
 ;; target-path: "."
+;; tmp-path: "tmp/"
+;; log-file: "leintest.log"
 ;; End:

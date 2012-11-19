@@ -2,7 +2,8 @@
 
 (ns etl-proxy.json.generator
   (:use cheshire.core
-        [etl-proxy.graph define comparison crud]))
+        [etl-proxy.graph define comparison crud]
+         clojure.tools.logging))
 
 ;; ## Generate JSON mark up expression from graph data structure.
 ;;
@@ -49,11 +50,13 @@
   "This function return new graph where accepted vertex will contain json map expressed from his
   parent-child relations."
   (fn [id graph]
-    (cond
-     (map-comprehension? id graph) :map-rule
-     (level-topology? id graph)    :vector-rule
-     (series-member? id graph)     :series-rule
-     :else                         false)))
+    (let [rule (cond
+                (map-comprehension? id graph) :map-rule
+                (level-topology? id graph)    :vector-rule
+                (series-member? id graph)     :series-rule
+                :else                         false)]
+      (debug "Id:" id "Applying" rule "rule.")
+      rule)))
 
 (defn final-json?
   "This function return true if there is a tuple of key and value represented as single list in the
@@ -158,6 +161,11 @@
   manner."
   [graph]
   ((fn [graph-state]
+     (debug "------------------------------------------------------------")
+     (debug graph-state)
+     (debug (json-expression? graph-state))
+     (debug (json-appearance graph-state))
+     (debug "------------------------------------------------------------")
      (if (json-expression? graph-state)
        graph-state
        (recur ((list-action-on-graph compose-json)

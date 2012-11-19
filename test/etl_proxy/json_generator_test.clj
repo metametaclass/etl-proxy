@@ -2,7 +2,11 @@
   (:use clojure.test
         etl-proxy.json.generator
         [etl-proxy.graph define comparison]
-        cheshire.core))
+        cheshire.core)
+  (:require [clojure.java.io :as io]))
+
+(org.apache.log4j.LogManager/resetConfiguration)
+(org.apache.log4j.PropertyConfigurator/configure "resources/log4j.leintest.properties")
 
 (deftest vertex-generalization-test
   (testing "Check following map rule with complex key-value vector reduction."
