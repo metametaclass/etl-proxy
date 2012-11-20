@@ -1,7 +1,8 @@
 ;; Copyright (c) 2012  Malyshev Artem  <proofit404@gmail.com>
 
 (ns etl-proxy.graph.define
-  (:use clojure.set))
+  (:use clojure.set
+        clojure.tools.logging))
 
 ;; ## Graph definition module.
 ;;
@@ -85,32 +86,27 @@
     ([graph])
     It is a function must return true when graph become to the desired form.
 
-  * item-category
-    ([graph])
-    High order function which return sequence of items entered into specified category. Defaults
-    values of this parameter is ids, bodies, vertices and edges functions.
-
-  * item-filter? 
-    ([item])
-    This function must return true if you want to process accepted vertex.
-
   * item-processor
     ([item graph])
     This function will used for transform accepted item in the specified graph and return
     new modified graph as it result.
 
-  Example: to rewrite your graph with capitalization of all strings use this:
-
-    (defn all-vertices-are-capital? [graph] ...)
-    (defn capitalize-vertex [body graph] ...)
-    (transform-graph all-vertices-are-capital? bodies string? capitalize-vertex graph)"
-  [stop? item-category item-filter? item-processor graph]
+  * filter-factory
+    ([graph])
+    High order function which return list of items appropriate for applying `item-processor' in
+    recursive manner.
+"
+  [stop? item-processor filter-factory graph]
+  (debug "------------------------------------------------------------")
+  (debug graph)
+  (debug (stop? graph))
+  (debug (filter-factory graph))
+  (debug "------------------------------------------------------------")
   (if (stop? graph)
     graph
     (recur stop?
-           item-category
-           item-filter?
            item-processor
+           filter-factory
            ((list-action-on-graph item-processor)
-            (filter item-filter? (item-category graph))
+            (filter-factory graph)
             graph))))

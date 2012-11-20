@@ -1,9 +1,8 @@
 ;; Copyright (c) 2012  Malyshev Artem  <proofit404@gmail.com>
 
 (ns etl-proxy.json.generator
-  (:use cheshire.core
-        [etl-proxy.graph define comparison crud]
-         clojure.tools.logging))
+  (:use [etl-proxy.graph define comparison crud]
+        clojure.tools.logging))
 
 ;; ## Generate JSON mark up expression from graph data structure.
 ;;
@@ -160,21 +159,7 @@
   "This function return json expression as string which correspond to given graph in topologically
   manner."
   [graph]
-  ((fn [graph-state]
-     (debug "------------------------------------------------------------")
-     (debug graph-state)
-     (debug (json-expression? graph-state))
-     (debug (json-appearance graph-state))
-     (debug "------------------------------------------------------------")
-     (if (json-expression? graph-state)
-       graph-state
-       (recur ((list-action-on-graph compose-json)
-               (json-appearance graph-state)
-               graph-state))))
-   graph)
-  ;; (generate-string
-  ;;  ;; Take unique vertex body as json expression.
-  ;;  (first
-  ;;   (bodies
-  ;;    )))
-  )
+  (let [json-graph (transform-graph json-expression? compose-json json-appearance graph)]
+    (if (graph= json-graph empty-graph)
+      {}
+      (first (bodies json-graph)))))

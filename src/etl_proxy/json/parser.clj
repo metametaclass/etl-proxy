@@ -1,8 +1,7 @@
 ;; Copyright (c) 2012  Malyshev Artem  <proofit404@gmail.com>
 
 (ns etl-proxy.json.parser
-  (:use cheshire.core
-        [etl-proxy.graph define crud route]))
+  (:use [etl-proxy.graph define crud route]))
 
 ;; ## Convert JSON markup language into graph data structure.
 ;;
@@ -148,7 +147,6 @@
   [json]
   (transform-graph
    json-free?
-   bodies
-   json-container?
    decompose-json
-   (add-vertex (parse-string json) empty-graph)))
+   #(filter json-container? (bodies %))
+   (add-vertex json empty-graph)))

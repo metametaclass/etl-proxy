@@ -27,23 +27,25 @@
     (is (= (json2graph "{}") empty-graph))
     ;; Short JSON expression convert check.
     (is (graph= (json2graph
-                 "{ 
-                    \"root\" : {
-                      \"a\": 1,
-                      \"b\": 2,
-                      \"c\": 3,
-                      \"d\": [
-                        \"DA\",
-                        \"DB\",
-                        \"DC\"
-                      ],
-                      \"e\": {
-                        \"ea\" : 11,
-                        \"eb\" : 12,
-                        \"ec\" : 13
-                      }
-                    }
-                  }")
+                 {"root" {"a" 1, "b" 2, "c" 3, "d" ["DA" "DB" "DC"], "e" {"ea" 11, "eb" 12, "ec" 13}}}
+                 ;; "{
+                 ;;    \"root\" : {
+                 ;;      \"a\": 1,
+                 ;;      \"b\": 2,
+                 ;;      \"c\": 3,
+                 ;;      \"d\": [
+                 ;;        \"DA\",
+                 ;;        \"DB\",
+                 ;;        \"DC\"
+                 ;;      ],
+                 ;;      \"e\": {
+                 ;;        \"ea\" : 11,
+                 ;;        \"eb\" : 12,
+                 ;;        \"ec\" : 13
+                 ;;      }
+                 ;;    }
+                 ;;  }"
+                 )
                 ;; Result graph as it is.
                 [#{[1 "root"]
                    [2 "a"] [3 1]
@@ -62,7 +64,7 @@
     ;; Check for working with longer expressions. This is type conversion problem when
     ;; PersistentArrayMap became PersistentHashMap in the maps which contain more than eight
     ;; elements.
-    (is (graph= (json2graph "{ 
+    (is (graph= (json2graph "{
                     \"root\" : {
                       \"a\": 1,
                       \"b\": 2,
